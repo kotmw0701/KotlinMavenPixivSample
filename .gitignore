@@ -1,2 +1,4 @@
 /target/
 /out/
+.git.bfg-report
+.client
