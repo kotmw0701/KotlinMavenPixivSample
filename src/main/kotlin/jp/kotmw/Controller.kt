@@ -61,10 +61,10 @@ class Controller: Initializable {
         "include_policy" to "true")
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        val reader = BufferedReader(FileReader(".client"))
-        username.text = reader.readLine()
-        password.text = reader.readLine()
-        reader.close()
+        BufferedReader(FileReader(".client")).use {
+            username.text = it.readLine()
+            password.text = it.readLine()
+        }
     }
 
     fun onButton(actionEvent: ActionEvent) {
@@ -91,8 +91,7 @@ class Controller: Initializable {
         println(authResponse.body())
 
         val body = authResponse.body()
-        val mapper = jacksonObjectMapper()
-        this.response = mapper.readValue<AuthResponse>(body).response
+        this.response = body.parseJson<AuthResponse>().response
         this.accessToken = response.access_token
         this.refreshToken = response.refresh_token
         this.userId = response.user.id
@@ -114,11 +113,13 @@ class Controller: Initializable {
 //        }
     }
 
-    private fun _testAuthRequest(method: Connection.Method = Connection.Method.GET,
-                                 url: String,
-                                 headers: MutableMap<String, String> = mutableMapOf(),
-                                 params: MutableMap<String, String> = mutableMapOf(),
-                                 data: MutableMap<String, String> = mutableMapOf()): String {
+    private fun _testAuthRequest(
+        method: Connection.Method = Connection.Method.GET,
+        url: String,
+        headers: MutableMap<String, String> = mutableMapOf(),
+        params: Map<String, String> = mapOf(),
+        data: Map<String, String> = mapOf()
+    ): String {
         if (headers["user-agent"].isNullOrEmpty() && headers["User-Agent"].isNullOrEmpty()) {
             headers["App-OS"] = "ios"
             headers["App-OS-Version"] = "12.2"
@@ -137,20 +138,31 @@ class Controller: Initializable {
         return requestCall.body()
     }
 
-    private fun _testRanking(mode: String = "day", filter: String = "for_ios", date: String? = null, offset: Int = 0): String {
+    private fun _testRanking(
+        mode: String = "day",
+        filter: String = "for_ios",
+        date: String = "",
+        offset: Int = 0
+    ): String {
         val url = "$host/v1/illust/ranking"
         val param = mutableMapOf(
             "mode" to mode,
             "filter" to filter
         )
-        if (date != null)
+        if (date.isNotEmpty())
             param["date"] = date
         if (offset > 0)
             param["offset"] = offset.toString()
         return _testAuthRequest(Connection.Method.GET, url, params = param)
     }
 
-    private fun _userBookmarks(userId: String = this.userId, restrict: String = "public", filter: String = "for_ios", maxBookmarkId: Int = 0, tag: String? = null): Illusts {
+    private fun _userBookmarks(
+        userId: String = this.userId,
+        restrict: String = "public",
+        filter: String = "for_ios",
+        maxBookmarkId: Int = 0,
+        tag: String = ""
+    ): Illusts {
         val url = "$host/v1/user/bookmarks/illust"
         val param = mutableMapOf(
             "user_id" to userId,
@@ -159,13 +171,13 @@ class Controller: Initializable {
         )
         if (maxBookmarkId > 0)
             param["max_bookmark_id"] = maxBookmarkId.toString()
-        if (tag != null)
+        if (tag.isNotEmpty())
             param["tag"] = tag
-        return jacksonObjectMapper().readValue(_testAuthRequest(Connection.Method.GET, url, params = param))
+        return _testAuthRequest(Connection.Method.GET, url, params = param).parseJson()
     }
 
     private fun _userNextBookmarks(beforeData: Illusts): Illusts {
-        return jacksonObjectMapper().readValue(_testAuthRequest(Connection.Method.GET, beforeData.next_url))
+        return _testAuthRequest(Connection.Method.GET, beforeData.next_url).parseJson()
     }
 
 //          val type = imageUrl.split(".").last()
@@ -196,7 +208,6 @@ class Controller: Initializable {
             }
         }
         println("Next -> ${bookmarkData.next_url}")
-        println("Next -> ${_userNextBookmarks(bookmarkData).next_url}")
     }
 
     private fun addImage(imageUrl: String) {
