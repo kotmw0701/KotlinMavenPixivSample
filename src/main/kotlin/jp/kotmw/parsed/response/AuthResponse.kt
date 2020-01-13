@@ -6,7 +6,7 @@ data class AuthResponse(
 
 data class Response(
     val access_token: String,
-    val device_token: String,
+    val device_token: String? = null,
     val expires_in: Int,
     val refresh_token: String,
     val scope: String,

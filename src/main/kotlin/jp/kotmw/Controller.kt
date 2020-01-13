@@ -1,7 +1,5 @@
 package jp.kotmw
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -13,16 +11,12 @@ import javafx.scene.image.ImageView
 import javafx.scene.layout.FlowPane
 import javafx.scene.layout.VBox
 import jp.kotmw.parsed.illust.Illusts
-import jp.kotmw.parsed.response.AuthResponse
-import jp.kotmw.parsed.response.Response
-import org.apache.commons.codec.digest.DigestUtils
+import jp.kotmw.pixiv.Pixiv
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import java.io.BufferedReader
-import java.io.File
 import java.io.FileReader
 import java.net.URL
-import java.text.SimpleDateFormat
 import java.util.*
 
 class Controller: Initializable {
@@ -34,83 +28,34 @@ class Controller: Initializable {
     @FXML
     lateinit var imageLists: FlowPane
 
-    private val authHost = "https://oauth.secure.pixiv.net"
     private val host = "https://app-api.pixiv.net"
-    private val hashSecret = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
-    private lateinit var response : Response
-    private var accessToken = ""
-    private var userId = ""
-    private var refreshToken = ""
 
-    private val header = mutableMapOf(
-        "host" to "oauth.secure.pixiv.net",
-        "user-agent" to "PixivAndroidApp/5.0.156 (Android 9; ONEPLUS A6013)",
-        "app-os" to "android",
-        "app-os-version" to "5.0.156",
-        "x-client-time" to "",
-        "x-client-hash" to "",
-        "content-type" to "application/x-www-form-urlencoded")
-
-    private val data = mutableMapOf(
-        "client_id" to "MOBrBDS8blbauoSck0ZfDbtuzpyT",
-        "client_secret" to "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
-        "grant_type" to "password",
-        "username" to "",
-        "password" to "",
-        "get_secure_url" to "true",
-        "include_policy" to "true")
+    private val pixiv = Pixiv()
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         BufferedReader(FileReader(".client")).use {
-            username.text = it.readLine()
-            password.text = it.readLine()
+            username.text = it.readLine() ?: ""
+            password.text = it.readLine() ?: ""
         }
     }
 
     fun onButton(actionEvent: ActionEvent) {
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'+00:00'")
-        format.timeZone = TimeZone.getTimeZone("UTC")
-        val localTime = format.format(Date())
-        header["x-client-time"] = localTime
-        header["x-client-hash"] = DigestUtils.md5Hex(localTime + hashSecret)
-        data["username"] = username.text
-        data["password"] = password.text
-        val authResponse = Jsoup.connect("$authHost/auth/token")
-            .method(Connection.Method.POST)
-            .headers(header)
-            .data(data)
-            .ignoreContentType(true)
-            .execute()
+        pixiv.login(username.text, password.text)
+    }
 
-        println("Status : ${authResponse.statusCode()}")
-        println("Cookies : ")
-        authResponse.cookies().forEach { (t, u) -> println("\t$t : $u")}
-        println("\nHeaders : ")
-        authResponse.headers().forEach { (t, u) -> println("\t$t : $u")}
-        println("\nBody : ")
-        println(authResponse.body())
+    fun onBookmarks(actionEvent: ActionEvent) {
+        val bookmarkData = _userBookmarks(restrict = "private")
 
-        val body = authResponse.body()
-        this.response = body.parseJson<AuthResponse>().response
-        this.accessToken = response.access_token
-        this.refreshToken = response.refresh_token
-        this.userId = response.user.id
-
-        println("------ Illusts ------")
-
-//        val rankingJson = mapper.readValue<Illusts>(_testRanking("day"))
-//
-//        for (illust in rankingJson.illusts) {
-//            println("\n${illust.title.decode()} : ${illust.user.name.decode()}")
-//            println("\tType : ${illust.type}")
-//            println("\tSanity : ${illust.sanity_level}")
-//            if (illust.page_count == 1) {
-//                println("\tOriginal : ${illust.meta_single_page.original_image_url}")
-//            } else {
-//                for (page in illust.meta_pages)
-//                    println("\tOriginal : ${page.image_urls.original}")
-//            }
-//        }
+        for (illust in bookmarkData.illusts) {
+            println("\n${illust.title.decode()} : ${illust.user.name.decode()}")
+            println("\tType : ${illust.type}")
+            if (illust.page_count == 1) {
+                addImage(illust.meta_single_page.original_image_url.toString())
+            } else {
+                addImage(illust.meta_pages[0].image_urls.original.toString())
+            }
+        }
+        println("Next -> ${bookmarkData.next_url}")
     }
 
     private fun _testAuthRequest(
@@ -126,7 +71,7 @@ class Controller: Initializable {
             headers["App-Version"] = "7.6.2"
             headers["User-Agent"] = "PixivIOSApp/7.6.2 (iOS 12.2; iPhone9,1)"
         }
-        headers["Authorization"] = "Bearer $accessToken"
+        headers["Authorization"] = "Bearer ${pixiv.accessToken}"
         val requestCall = Jsoup.connect(url)
             .method(method)
             .headers(headers)
@@ -157,7 +102,7 @@ class Controller: Initializable {
     }
 
     private fun _userBookmarks(
-        userId: String = this.userId,
+        userId: String = pixiv.userId,
         restrict: String = "public",
         filter: String = "for_ios",
         maxBookmarkId: Int = 0,
@@ -193,21 +138,6 @@ class Controller: Initializable {
             .execute()
         val byte = imageResponse.bodyStream()
         return Image(byte)
-    }
-
-    fun onBookmarks(actionEvent: ActionEvent) {
-        val bookmarkData = _userBookmarks(restrict = "private")
-
-        for (illust in bookmarkData.illusts) {
-            println("\n${illust.title.decode()} : ${illust.user.name.decode()}")
-            println("\tType : ${illust.type}")
-            if (illust.page_count == 1) {
-                addImage(illust.meta_single_page.original_image_url.toString())
-            } else {
-                addImage(illust.meta_pages[0].image_urls.original.toString())
-            }
-        }
-        println("Next -> ${bookmarkData.next_url}")
     }
 
     private fun addImage(imageUrl: String) {
