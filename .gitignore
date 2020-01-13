@@ -2,3 +2,4 @@
 /out/
 .git.bfg-report
 .client
+.config
