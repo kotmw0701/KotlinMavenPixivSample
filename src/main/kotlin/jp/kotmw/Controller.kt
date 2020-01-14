@@ -4,17 +4,23 @@ import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.geometry.Pos
+import javafx.scene.control.Label
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.FlowPane
+import javafx.scene.layout.Pane
 import javafx.scene.layout.VBox
-import jp.kotmw.parsed.illust.Illusts
+import javafx.scene.paint.Color
+import javafx.scene.shape.Circle
+import javafx.scene.shape.SVGPath
+import javafx.scene.text.Font
+import javafx.scene.text.TextAlignment
+import jp.kotmw.pixiv.IllustType
 import jp.kotmw.pixiv.Pixiv
-import org.jsoup.Connection
-import org.jsoup.Jsoup
 import java.io.BufferedReader
+import java.io.File
 import java.io.FileReader
 import java.net.URL
 import java.util.*
@@ -33,10 +39,11 @@ class Controller: Initializable {
     private val pixiv = Pixiv()
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        BufferedReader(FileReader(".client")).use {
-            username.text = it.readLine() ?: ""
-            password.text = it.readLine() ?: ""
-        }
+        if (File(".client").exists())
+            BufferedReader(FileReader(".client")).use {
+                username.text = it.readLine() ?: ""
+                password.text = it.readLine() ?: ""
+            }
     }
 
     fun onButton(actionEvent: ActionEvent) {
@@ -44,111 +51,63 @@ class Controller: Initializable {
     }
 
     fun onBookmarks(actionEvent: ActionEvent) {
-        val bookmarkData = _userBookmarks(restrict = "private")
+        imageLists.children.clear()
+        val bookmarkData = pixiv.userBookmarks(restrict = "private")
 
         for (illust in bookmarkData.illusts) {
             println("\n${illust.title.decode()} : ${illust.user.name.decode()}")
             println("\tType : ${illust.type}")
-            if (illust.page_count == 1) {
-                addImage(illust.meta_single_page.original_image_url.toString())
-            } else {
-                addImage(illust.meta_pages[0].image_urls.original.toString())
-            }
+            addImage(illust.image_urls.small, illust.type)
         }
-        println("Next -> ${bookmarkData.next_url}")
-    }
-
-    private fun _testAuthRequest(
-        method: Connection.Method = Connection.Method.GET,
-        url: String,
-        headers: MutableMap<String, String> = mutableMapOf(),
-        params: Map<String, String> = mapOf(),
-        data: Map<String, String> = mapOf()
-    ): String {
-        if (headers["user-agent"].isNullOrEmpty() && headers["User-Agent"].isNullOrEmpty()) {
-            headers["App-OS"] = "ios"
-            headers["App-OS-Version"] = "12.2"
-            headers["App-Version"] = "7.6.2"
-            headers["User-Agent"] = "PixivIOSApp/7.6.2 (iOS 12.2; iPhone9,1)"
+        val label = Label("[Click]\nLoad next page")
+        label.textAlignment = TextAlignment.CENTER
+        label.font = Font(20.0)
+        val vBox = VBox(label)
+        vBox.alignment = Pos.CENTER
+        vBox.setOnMouseClicked {
+            imageLists.children.remove(vBox)
+            val nextBookmarks = pixiv.userNextBookmarks(bookmarkData)
+            for (illust in nextBookmarks.illusts) addImage(illust.image_urls.small, illust.type)
         }
-        headers["Authorization"] = "Bearer ${pixiv.accessToken}"
-        val requestCall = Jsoup.connect(url)
-            .method(method)
-            .headers(headers)
-            .data(params)
-            .data(data)
-            .ignoreContentType(true)
-            .execute()
 
-        return requestCall.body()
+        imageLists.children.add(vBox)
     }
 
-    private fun _testRanking(
-        mode: String = "day",
-        filter: String = "for_ios",
-        date: String = "",
-        offset: Int = 0
-    ): String {
-        val url = "$host/v1/illust/ranking"
-        val param = mutableMapOf(
-            "mode" to mode,
-            "filter" to filter
-        )
-        if (date.isNotEmpty())
-            param["date"] = date
-        if (offset > 0)
-            param["offset"] = offset.toString()
-        return _testAuthRequest(Connection.Method.GET, url, params = param)
-    }
+    fun onRankings(actionEvent: ActionEvent) {
+        imageLists.children.clear()
+        val rankingData = pixiv.rankings()
 
-    private fun _userBookmarks(
-        userId: String = pixiv.userId,
-        restrict: String = "public",
-        filter: String = "for_ios",
-        maxBookmarkId: Int = 0,
-        tag: String = ""
-    ): Illusts {
-        val url = "$host/v1/user/bookmarks/illust"
-        val param = mutableMapOf(
-            "user_id" to userId,
-            "restrict" to restrict,
-            "filter" to filter
-        )
-        if (maxBookmarkId > 0)
-            param["max_bookmark_id"] = maxBookmarkId.toString()
-        if (tag.isNotEmpty())
-            param["tag"] = tag
-        return _testAuthRequest(Connection.Method.GET, url, params = param).parseJson()
+        for (illust in rankingData.illusts) {
+            addImage(illust.image_urls.small, illust.type)
+        }
     }
-
-    private fun _userNextBookmarks(beforeData: Illusts): Illusts {
-        return _testAuthRequest(Connection.Method.GET, beforeData.next_url).parseJson()
-    }
-
 //          val type = imageUrl.split(".").last()
 //
 //          ImageIO.write(ImageIO.read(ByteArrayInputStream(stream)), type, File("C:\\Image\\${imageUrl.split("/").last()}"))
-    private fun _loadIllust(imageUrl: String, referer: String = "https://app-api.pixiv.net"): Image {
-        println("Url : $imageUrl")
-        val imageResponse =  Jsoup.connect(imageUrl)
-            .method(Connection.Method.GET)
-            .header("Referer", referer)
-            .ignoreContentType(true)
-            .maxBodySize(0)
-            .execute()
-        val byte = imageResponse.bodyStream()
-        return Image(byte)
-    }
 
-    private fun addImage(imageUrl: String) {
+    private fun addImage(imageUrl: String, illustType: IllustType) {
         val imageView = ImageView()
         imageView.isPreserveRatio = true
-        imageView.fitHeight = 200.0
-        imageView.fitWidth = 200.0
-        imageView.image = _loadIllust(imageUrl)
+        imageView.image = Image(pixiv.getImageStream(imageUrl))
+//        println("${imageView.image.width} : ${imageView.image.height}")
         val vBox = VBox(imageView)
+        vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
-        vBox.setPrefSize(200.0, 200.0)
-        imageLists.children.add(vBox)
+        val pane = Pane(vBox)
+        if (illustType == IllustType.Ugoira)
+            pane.children.add(ugoiraSign())
+        imageLists.children.add(pane)
+    }
+
+    private fun ugoiraSign(): Pane {
+        val play = SVGPath()
+        play.content = "M16 16v17.108a2 2 0 002.992 1.736l14.97-8.554a2 2 0 000-3.473l-14.97-8.553A2 2 0 0016 16z"
+        play.fill = Color.WHITE
+        play.translateX = -4.0
+        play.translateY = -4.0
+        val pane = Pane(Circle(20.0, 20.0, 20.0, Color.web("#00000064")), play)
+        pane.translateX = 55.0
+        pane.translateY = 55.0
+        return pane
     }
 }

@@ -1,4 +1,4 @@
-package jp.kotmw.parsed.response
+package jp.kotmw.pixiv.json.response
 
 data class AuthResponse(
     val response: Response

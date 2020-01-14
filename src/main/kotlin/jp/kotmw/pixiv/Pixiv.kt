@@ -2,14 +2,13 @@ package jp.kotmw.pixiv
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jp.kotmw.parseJson
-import jp.kotmw.parsed.response.AuthResponse
-import jp.kotmw.parsed.response.Response
+import jp.kotmw.pixiv.json.illust.IllustPages
+import jp.kotmw.pixiv.json.response.AuthResponse
+import jp.kotmw.pixiv.json.response.Response
 import org.apache.commons.codec.digest.DigestUtils
 import org.jsoup.Connection
 import org.jsoup.Jsoup
 import java.io.*
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -44,6 +43,58 @@ class Pixiv {
         this.accessToken = accessToken
         this.configuration.refreshToken = refreshToken
         updateConfig()
+    }
+
+    fun rankings(
+        mode: String = "day",
+        filter: String = "for_ios",
+        date: String = "",
+        offset: Int = 0
+    ): IllustPages {
+        val url = "$host/v1/illust/ranking"
+        val param = mutableMapOf(
+            "mode" to mode,
+            "filter" to filter
+        )
+        if (date.isNotEmpty())
+            param["date"] = date
+        if (offset > 0)
+            param["offset"] = offset.toString()
+        return apiRequest(url = url, data = param).parseJson()
+    }
+
+    fun userBookmarks(
+        userId: String = this.userId,
+        restrict: String = "public",
+        filter: String = "for_ios",
+        maxBookmarkId: Int = 0,
+        tag: String = ""
+    ): IllustPages {
+        val url = "$host/v1/user/bookmarks/illust"
+        val param = mutableMapOf(
+            "user_id" to userId,
+            "restrict" to restrict,
+            "filter" to filter
+        )
+        if (maxBookmarkId > 0)
+            param["max_bookmark_id"] = maxBookmarkId.toString()
+        if (tag.isNotEmpty())
+            param["tag"] = tag
+        return apiRequest(url = url, data = param).parseJson()
+    }
+
+    fun userNextBookmarks(beforeData: IllustPages): IllustPages {
+        return apiRequest(url = beforeData.next_url).parseJson()
+    }
+
+    fun getImageStream(imageUrl: String, referer: String = "https://app-api.pixiv.net"): BufferedInputStream {
+        val imageResponse =  Jsoup.connect(imageUrl)
+            .method(Connection.Method.GET)
+            .header("Referer", referer)
+            .ignoreContentType(true)
+            .maxBodySize(0)
+            .execute()
+        return imageResponse.bodyStream()
     }
 
     private fun auth(userName: String = "", password: String = "", refreshToken: String = "") {
@@ -111,11 +162,29 @@ class Pixiv {
             .execute()
     }
 
+    private fun apiRequest(
+        method: Connection.Method = Connection.Method.GET,
+        url: String,
+        headers: MutableMap<String, String> = mutableMapOf(),
+        data: Map<String, String> = mapOf(),
+        authenticated: Boolean = true
+    ):String {
+        if (headers["user-agent"].isNullOrEmpty() && headers["User-Agent"].isNullOrEmpty()) {
+            headers["App-OS"] = "ios"
+            headers["App-OS-Version"] = "12.2"
+            headers["App-Version"] = "7.6.2"
+            headers["User-Agent"] = "PixivIOSApp/7.6.2 (iOS 12.2; iPhone9,1)"
+        }
+        return if (authenticated) {
+            headers["Authorization"] = "Bearer $accessToken"
+            request(method, url, headers, data).body()
+        } else request(method, url, headers, data).body()
+    }
+
     private fun updateConfig() {
         PrintWriter(FileWriter(".config")).use {
             it.print(jacksonObjectMapper().writeValueAsString(configuration))
         }
-//        Files.setAttribute(Paths.get(".config"), "dos:hidden", true)
     }
 }
 

@@ -1,6 +1,8 @@
-package jp.kotmw.parsed.illust
+package jp.kotmw.pixiv.json.illust
 
-data class Illusts(
+import jp.kotmw.pixiv.IllustType
+
+data class IllustPages(
     val illusts: List<Illust>,
     val next_url: String
 )
@@ -18,13 +20,13 @@ data class Illust(
     val page_count: Int,
     val restrict: Int,
     val sanity_level: Int,
-    val series: Series?, //無しになるパターン有
+    val series: Series? = null,
     val tags: List<Tag>,
     val title: String,
     val tools: List<String>,
     val total_bookmarks: Int,
     val total_view: Int,
-    val type: String,
+    val type: IllustType,
     val user: User,
     val visible: Boolean,
     val width: Int,
@@ -34,8 +36,9 @@ data class Illust(
 data class ImageUrls(
     val large: String,
     val medium: String,
-    val original: String?, //無しになるパターン有
-    val square_medium: String
+    val original: String? = null,
+    val square_medium: String,
+    val small: String = medium.replace("540x540_70", "150x150")
 )
 
 data class MetaPage(
@@ -43,7 +46,7 @@ data class MetaPage(
 )
 
 data class MetaSinglePage(
-    val original_image_url: String? //無しになるパターン有
+    val original_image_url: String? = null
 )
 
 data class Series(
@@ -53,7 +56,7 @@ data class Series(
 
 data class Tag(
     val name: String,
-    val translated_name: Any? //無しになるパターン有
+    val translated_name: Any? = null
 )
 
 data class User(
