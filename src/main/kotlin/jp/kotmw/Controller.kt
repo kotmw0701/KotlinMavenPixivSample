@@ -9,6 +9,7 @@ import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.FlowPane
 import javafx.scene.layout.Pane
 import javafx.scene.layout.VBox
@@ -93,6 +94,7 @@ class Controller: Initializable {
         val vBox = VBox(imageView)
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
+        vBox.styleClass.add("imageBox")
         val pane = Pane(vBox)
         if (illustType == IllustType.Ugoira)
             pane.children.add(ugoiraSign())
