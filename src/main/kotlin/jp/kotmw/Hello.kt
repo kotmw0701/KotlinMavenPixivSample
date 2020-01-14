@@ -9,8 +9,6 @@ import javafx.stage.Stage
 class Main : Application() {
     override fun start(primaryStage: Stage?) {
         primaryStage?.scene = Scene(FXMLLoader.load<Parent>(ClassLoader.getSystemResource("Main.fxml")))
-        primaryStage?.isResizable = false
-        primaryStage?.sizeToScene()
         primaryStage?.show()
     }
 }

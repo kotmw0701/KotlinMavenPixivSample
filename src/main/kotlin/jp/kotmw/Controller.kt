@@ -3,10 +3,10 @@ package jp.kotmw
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.geometry.Insets
 import javafx.geometry.Pos
-import javafx.scene.control.Label
-import javafx.scene.control.PasswordField
-import javafx.scene.control.TextField
+import javafx.scene.Scene
+import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.FlowPane
@@ -17,8 +17,10 @@ import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
 import javafx.scene.text.Font
 import javafx.scene.text.TextAlignment
-import jp.kotmw.pixiv.IllustType
+import javafx.stage.Stage
+import jp.kotmw.pixiv.json.illust.IllustType
 import jp.kotmw.pixiv.Pixiv
+import jp.kotmw.pixiv.json.illust.IllustPages
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -28,49 +30,28 @@ import java.util.*
 class Controller: Initializable {
 
     @FXML
-    lateinit var username: TextField
-    @FXML
-    lateinit var password: PasswordField
-    @FXML
     lateinit var imageLists: FlowPane
-
-    private val host = "https://app-api.pixiv.net"
 
     private val pixiv = Pixiv()
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
+        var username = ""
+        var password = ""
         if (File(".client").exists())
             BufferedReader(FileReader(".client")).use {
-                username.text = it.readLine() ?: ""
-                password.text = it.readLine() ?: ""
+                username = it.readLine() ?: ""
+                password = it.readLine() ?: ""
             }
-    }
-
-    fun onButton(actionEvent: ActionEvent) {
-        pixiv.login(username.text, password.text)
+        loginDialog(username, password)
     }
 
     fun onBookmarks(actionEvent: ActionEvent) {
         imageLists.children.clear()
         val bookmarkData = pixiv.userBookmarks(restrict = "private")
 
-        for (illust in bookmarkData.illusts) {
-            println("\n${illust.title.decode()} : ${illust.user.name.decode()}")
-            println("\tType : ${illust.type}")
-            addImage(illust.image_urls.small, illust.type)
-        }
-        val label = Label("[Click]\nLoad next page")
-        label.textAlignment = TextAlignment.CENTER
-        label.font = Font(20.0)
-        val vBox = VBox(label)
-        vBox.alignment = Pos.CENTER
-        vBox.setOnMouseClicked {
-            imageLists.children.remove(vBox)
-            val nextBookmarks = pixiv.userNextBookmarks(bookmarkData)
-            for (illust in nextBookmarks.illusts) addImage(illust.image_urls.small, illust.type)
-        }
+        bookmarkData.illusts.forEach { addImage(it.image_urls.small, it.type) }
 
-        imageLists.children.add(vBox)
+        loadButton(bookmarkData)
     }
 
     fun onRankings(actionEvent: ActionEvent) {
@@ -85,11 +66,30 @@ class Controller: Initializable {
 //
 //          ImageIO.write(ImageIO.read(ByteArrayInputStream(stream)), type, File("C:\\Image\\${imageUrl.split("/").last()}"))
 
+    private fun loadButton(beforeData: IllustPages) {
+        if (beforeData.next_url == null) return
+        val label = Label("[Click]\nLoad next page")
+        label.textAlignment = TextAlignment.CENTER
+        label.font = Font(20.0)
+        val vBox = VBox(label)
+        vBox.alignment = Pos.CENTER
+        vBox.setOnMouseClicked {
+            imageLists.children.remove(vBox)
+            val nextBookmarks = pixiv.loadNextPage(beforeData)
+            if (nextBookmarks != null) {
+                for (illust in nextBookmarks.illusts) addImage(illust.image_urls.small, illust.type)
+                loadButton(nextBookmarks)
+            }
+        }
+        imageLists.children.add(vBox)
+    }
+
     private fun addImage(imageUrl: String, illustType: IllustType) {
         val imageView = ImageView()
         imageView.isPreserveRatio = true
+        imageView.fitHeight = 150.0
+        imageView.fitWidth = 150.0
         imageView.image = Image(pixiv.getImageStream(imageUrl))
-//        println("${imageView.image.width} : ${imageView.image.height}")
         val vBox = VBox(imageView)
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
@@ -109,5 +109,31 @@ class Controller: Initializable {
         pane.translateX = 55.0
         pane.translateY = 55.0
         return pane
+    }
+
+    private fun loginDialog(userName: String, password: String) {
+        val stage = Stage()
+        stage.isResizable = false
+        stage.sizeToScene()
+        val textField = TextField()
+        textField.promptText = "ID or mail address"
+        textField.text = userName
+        textField.setPrefSize(240.0, 30.0)
+        val passwordField = PasswordField()
+        passwordField.promptText = "password"
+        passwordField.text = password
+        passwordField.setPrefSize(240.0, 30.0)
+        val login = Button("Login")
+        login.setPrefSize(240.0, 40.0)
+        login.setOnAction {
+            pixiv.login(textField.text, passwordField.text)
+            stage.close()
+        }
+        val vBox = VBox(textField, passwordField, login)
+        vBox.setPrefSize(300.0, 200.0)
+        vBox.padding = Insets(30.0)
+        vBox.spacing = 10.0
+        stage.scene = Scene(vBox)
+        stage.showAndWait()
     }
 }

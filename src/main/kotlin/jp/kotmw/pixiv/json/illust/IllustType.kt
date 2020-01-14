@@ -1,4 +1,4 @@
-package jp.kotmw.pixiv
+package jp.kotmw.pixiv.json.illust
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

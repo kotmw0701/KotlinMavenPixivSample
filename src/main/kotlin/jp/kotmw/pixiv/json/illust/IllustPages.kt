@@ -1,10 +1,8 @@
 package jp.kotmw.pixiv.json.illust
 
-import jp.kotmw.pixiv.IllustType
-
 data class IllustPages(
     val illusts: List<Illust>,
-    val next_url: String
+    val next_url: String? = null
 )
 
 data class Illust(

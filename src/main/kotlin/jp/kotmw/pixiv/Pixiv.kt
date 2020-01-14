@@ -35,15 +35,9 @@ class Pixiv {
 
     }
 
-    fun login(userName: String, password: String) {
-        auth(userName, password)
-    }
+    fun login(userName: String, password: String) = auth(userName, password)
 
-    fun enableAuth(accessToken: String, refreshToken: String = "") {
-        this.accessToken = accessToken
-        this.configuration.refreshToken = refreshToken
-        updateConfig()
-    }
+    fun hasRefreshToken(): Boolean = configuration.refreshToken.isNullOrEmpty()
 
     fun rankings(
         mode: String = "day",
@@ -83,8 +77,11 @@ class Pixiv {
         return apiRequest(url = url, data = param).parseJson()
     }
 
-    fun userNextBookmarks(beforeData: IllustPages): IllustPages {
-        return apiRequest(url = beforeData.next_url).parseJson()
+    fun loadNextPage(beforeData: IllustPages): IllustPages? {
+        val url = beforeData.next_url
+        if (url != null)
+            return apiRequest(url = beforeData.next_url).parseJson()
+        return null
     }
 
     fun getImageStream(imageUrl: String, referer: String = "https://app-api.pixiv.net"): BufferedInputStream {
@@ -125,13 +122,6 @@ class Pixiv {
         } else throw IllegalArgumentException("password or refreshToken is not set.")
 
         val response = request(Connection.Method.POST, url, headers, data)
-        if (!listOf(200, 301, 302).contains(response.statusCode())) {
-            if (data["grant_type"] == "password")
-                throw IllegalArgumentException("Authentication Failed. Check your username and password.\n" +
-                        "HTTP ${response.statusCode()} : ${response.body()}")
-            else throw IllegalArgumentException("Authentication Failed. Check your Refresh Token.\n" +
-                    "HTTP ${response.statusCode()} : ${response.body()}")
-        }
 
         println("Status : ${response.statusCode()}")
         println("Cookies : ")
