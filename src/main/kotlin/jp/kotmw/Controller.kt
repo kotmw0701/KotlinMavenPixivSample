@@ -6,27 +6,25 @@ import javafx.fxml.Initializable
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.*
+import javafx.scene.control.Button
+import javafx.scene.control.PasswordField
+import javafx.scene.control.TextField
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
-import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.FlowPane
-import javafx.scene.layout.Pane
-import javafx.scene.layout.VBox
+import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
-import javafx.scene.text.Font
-import javafx.scene.text.TextAlignment
 import javafx.stage.Stage
-import jp.kotmw.pixiv.json.illust.IllustType
 import jp.kotmw.pixiv.Pixiv
 import jp.kotmw.pixiv.json.illust.IllustPages
+import jp.kotmw.pixiv.json.illust.IllustType
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.net.URL
 import java.util.*
+import kotlin.system.exitProcess
 
 class Controller: Initializable {
 
@@ -71,20 +69,20 @@ class Controller: Initializable {
 
     private fun loadButton(beforeData: IllustPages) {
         if (beforeData.next_url == null) return
-        val label = Label("[Click]\nLoad next page")
-        label.textAlignment = TextAlignment.CENTER
-        label.font = Font(20.0)
-        val vBox = VBox(label)
-        vBox.alignment = Pos.CENTER
-        vBox.setOnMouseClicked {
-            imageLists.children.remove(vBox)
+        val button = Button("Load More...")
+        AnchorPane.setRightAnchor(button, 20.0)
+        AnchorPane.setLeftAnchor(button, 20.0)
+        val anchorPane = AnchorPane(button)
+        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty().subtract(15.0))
+        imageLists.children.add(anchorPane)
+        button.setOnAction {
+            imageLists.children.remove(anchorPane)
             val nextBookmarks = pixiv.loadNextPage(beforeData)
             if (nextBookmarks != null) {
                 for (illust in nextBookmarks.illusts) addImage(illust.image_urls.small, illust.type)
                 loadButton(nextBookmarks)
             }
         }
-        imageLists.children.add(vBox)
     }
 
     private fun addImage(imageUrl: String, illustType: IllustType) {
@@ -94,9 +92,9 @@ class Controller: Initializable {
         imageView.fitWidth = 150.0
         imageView.image = Image(pixiv.getImageStream(imageUrl))
         val vBox = VBox(imageView)
+        vBox.styleClass.add("imageBox")
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
-        vBox.styleClass.add("imageBox")
         val pane = Pane(vBox)
         if (illustType == IllustType.Ugoira)
             pane.children.add(ugoiraSign())
@@ -138,6 +136,9 @@ class Controller: Initializable {
         vBox.padding = Insets(30.0)
         vBox.spacing = 10.0
         stage.scene = Scene(vBox)
+        stage.setOnCloseRequest {
+            exitProcess(0)
+        }
         stage.showAndWait()
     }
 }

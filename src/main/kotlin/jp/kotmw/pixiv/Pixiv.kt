@@ -21,8 +21,8 @@ class Pixiv {
     private val clientSecret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
     private val hash = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"
 
-    var accessToken: String = ""
-    var userId = ""
+    private var accessToken: String = ""
+    private var userId = ""
 
     init {
         val config = File(".config")
@@ -149,6 +149,7 @@ class Pixiv {
             .headers(headers)
             .data(data)
             .ignoreContentType(true)
+            .ignoreHttpErrors(true)
             .execute()
     }
 
