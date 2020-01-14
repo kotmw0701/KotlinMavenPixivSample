@@ -31,6 +31,8 @@ import java.util.*
 class Controller: Initializable {
 
     @FXML
+    lateinit var root: AnchorPane
+    @FXML
     lateinit var imageLists: FlowPane
 
     private val pixiv = Pixiv()
