@@ -1,5 +1,6 @@
 package jp.kotmw
 
+import javafx.animation.ScaleTransition
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -16,6 +17,7 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
 import javafx.stage.Stage
+import javafx.util.Duration
 import jp.kotmw.pixiv.Pixiv
 import jp.kotmw.pixiv.json.illust.IllustPages
 import jp.kotmw.pixiv.json.illust.IllustType
@@ -69,11 +71,12 @@ class Controller: Initializable {
 
     private fun loadButton(beforeData: IllustPages) {
         if (beforeData.next_url == null) return
-        val button = Button("Load More...")
-        AnchorPane.setRightAnchor(button, 20.0)
-        AnchorPane.setLeftAnchor(button, 20.0)
+        val button = Button("Load More (+30)")
+        button.styleClass.add("loadMore")
+        AnchorPane.setRightAnchor(button, 50.0)
+        AnchorPane.setLeftAnchor(button, 50.0)
         val anchorPane = AnchorPane(button)
-        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty().subtract(15.0))
+        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty().subtract(35.0))
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)
@@ -96,6 +99,21 @@ class Controller: Initializable {
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
         val pane = Pane(vBox)
+        val transition = ScaleTransition(Duration.seconds(0.1), imageView)
+        pane.setOnMouseEntered {
+            transition.fromX = 1.0
+            transition.fromY = 1.0
+            transition.toX = 1.1
+            transition.toY = 1.1
+            transition.play()
+        }
+        pane.setOnMouseExited {
+            transition.fromX = 1.1
+            transition.fromY = 1.1
+            transition.toX = 1.0
+            transition.toY = 1.0
+            transition.play()
+        }
         if (illustType == IllustType.Ugoira)
             pane.children.add(ugoiraSign())
         imageLists.children.add(pane)
