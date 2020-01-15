@@ -2,8 +2,12 @@
     -fx-effect: dropshadow(three-pass-box, black, 10, 0, 2.0, 2.0);
 }
 
-.nextButton {
-    -fx-border-color: aqua;
-    -fx-border-radius: 50%;
-    -fx-background-radius: 50%;
+.loadMore {
+    -fx-cursor: hand;
+    -fx-font-family: sans-serif;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-color: royalblue;
+    -fx-pref-height: 30px;
+    -fx-focus-traversable: false;
 }
