@@ -2,6 +2,7 @@ package jp.kotmw.pixiv
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import jp.kotmw.parseJson
+import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustPages
 import jp.kotmw.pixiv.json.response.AuthResponse
 import jp.kotmw.pixiv.json.response.Response
@@ -23,6 +24,7 @@ class Pixiv {
 
     private var accessToken: String = ""
     private var userId = ""
+    private var nextPage = ""
 
     init {
         val config = File(".config")
@@ -32,7 +34,6 @@ class Pixiv {
             configuration = Configuration(null)
             updateConfig()
         }
-
     }
 
     fun login(userName: String, password: String) = auth(userName, password)
@@ -46,7 +47,7 @@ class Pixiv {
         filter: String = "for_ios",
         date: String = "",
         offset: Int = 0
-    ): IllustPages {
+    ): List<Illust> {
         val url = "$host/v1/illust/ranking"
         val param = mutableMapOf(
             "mode" to mode,
@@ -56,7 +57,10 @@ class Pixiv {
             param["date"] = date
         if (offset > 0)
             param["offset"] = offset.toString()
-        return apiRequest(url = url, data = param).parseJson()
+        return apiRequest(url = url, data = param).parseJson<IllustPages>().let {
+            this.nextPage = it.next_url ?: ""
+            it.illusts
+        }
     }
 
     fun userBookmarks(
@@ -65,7 +69,7 @@ class Pixiv {
         filter: String = "for_ios",
         maxBookmarkId: Int = 0,
         tag: String = ""
-    ): IllustPages {
+    ): List<Illust> {
         val url = "$host/v1/user/bookmarks/illust"
         val param = mutableMapOf(
             "user_id" to userId,
@@ -76,14 +80,19 @@ class Pixiv {
             param["max_bookmark_id"] = maxBookmarkId.toString()
         if (tag.isNotEmpty())
             param["tag"] = tag
-        return apiRequest(url = url, data = param).parseJson()
+        return apiRequest(url = url, data = param).parseJson<IllustPages>().let {
+            this.nextPage = it.next_url ?: ""
+            it.illusts
+        }
     }
 
-    fun loadNextPage(beforeData: IllustPages): IllustPages? {
-        val url = beforeData.next_url
-        if (url != null)
-            return apiRequest(url = beforeData.next_url).parseJson()
-        return null
+    fun hasNextList(): Boolean = nextPage.isNotEmpty()
+
+    fun loadNextList(): List<Illust> {
+        return if (hasNextList()) apiRequest(url = nextPage).parseJson<IllustPages>().let {
+            this.nextPage = it.next_url ?: ""
+            it.illusts
+        } else listOf()
     }
 
     fun getImageStream(imageUrl: String, referer: String = "https://app-api.pixiv.net"): BufferedInputStream {

@@ -1,9 +1,7 @@
 package jp.kotmw
 
-import javafx.animation.ScaleTransition
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
-import javafx.fxml.Initializable
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
@@ -17,15 +15,11 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
 import javafx.stage.Stage
-import javafx.util.Duration
 import jp.kotmw.pixiv.Pixiv
-import jp.kotmw.pixiv.json.illust.IllustPages
 import jp.kotmw.pixiv.json.illust.IllustType
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
-import java.net.URL
-import java.util.*
 import kotlin.system.exitProcess
 
 class Controller {
@@ -54,16 +48,16 @@ class Controller {
         imageLists.children.clear()
         val bookmarkData = pixiv.userBookmarks(restrict = "private")
 
-        bookmarkData.illusts.forEach { addImage(it.image_urls.small, it.type) }
+        bookmarkData.forEach { addImage(it.image_urls.small, it.type) }
 
-        loadButton(bookmarkData)
+        setLoadButton()
     }
 
     fun onRankings(actionEvent: ActionEvent) {
         imageLists.children.clear()
         val rankingData = pixiv.rankings()
 
-        for (illust in rankingData.illusts) {
+        for (illust in rankingData) {
             addImage(illust.image_urls.small, illust.type)
         }
     }
@@ -71,8 +65,8 @@ class Controller {
 //
 //          ImageIO.write(ImageIO.read(ByteArrayInputStream(stream)), type, File("C:\\Image\\${imageUrl.split("/").last()}"))
 
-    private fun loadButton(beforeData: IllustPages) {
-        if (beforeData.next_url == null) return
+    private fun setLoadButton() {
+        if (!pixiv.hasNextList()) return
         val button = Button("Load More (+30)")
         button.styleClass.add("loadMore")
         AnchorPane.setRightAnchor(button, 50.0)
@@ -82,11 +76,8 @@ class Controller {
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)
-            val nextBookmarks = pixiv.loadNextPage(beforeData)
-            if (nextBookmarks != null) {
-                for (illust in nextBookmarks.illusts) addImage(illust.image_urls.small, illust.type)
-                loadButton(nextBookmarks)
-            }
+            for (illust in pixiv.loadNextList()) addImage(illust.image_urls.small, illust.type)
+            setLoadButton()
         }
     }
 
@@ -101,21 +92,21 @@ class Controller {
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
         val pane = Pane(vBox)
-        val transition = ScaleTransition(Duration.seconds(0.1), imageView)
-        pane.setOnMouseEntered {
-            transition.fromX = 1.0
-            transition.fromY = 1.0
-            transition.toX = 1.1
-            transition.toY = 1.1
-            transition.play()
-        }
-        pane.setOnMouseExited {
-            transition.fromX = 1.1
-            transition.fromY = 1.1
-            transition.toX = 1.0
-            transition.toY = 1.0
-            transition.play()
-        }
+//        val transition = ScaleTransition(Duration.seconds(0.1), imageView)
+//        pane.setOnMouseEntered {
+//            transition.fromX = 1.0
+//            transition.fromY = 1.0
+//            transition.toX = 1.1
+//            transition.toY = 1.1
+//            transition.play()
+//        }
+//        pane.setOnMouseExited {
+//            transition.fromX = 1.1
+//            transition.fromY = 1.1
+//            transition.toX = 1.0
+//            transition.toY = 1.0
+//            transition.play()
+//        }
         if (illustType == IllustType.Ugoira)
             pane.children.add(ugoiraSign())
         imageLists.children.add(pane)
