@@ -28,7 +28,7 @@ import java.net.URL
 import java.util.*
 import kotlin.system.exitProcess
 
-class Controller: Initializable {
+class Controller {
 
     @FXML
     lateinit var root: AnchorPane
@@ -37,15 +37,17 @@ class Controller: Initializable {
 
     private val pixiv = Pixiv()
 
-    override fun initialize(location: URL?, resources: ResourceBundle?) {
-        var username = ""
-        var password = ""
-        if (File(".client").exists())
-            BufferedReader(FileReader(".client")).use {
-                username = it.readLine() ?: ""
-                password = it.readLine() ?: ""
-            }
-        loginDialog(username, password)
+    fun loginCheck() {
+        if (!pixiv.hasRefreshToken()) {
+            var username = ""
+            var password = ""
+            if (File(".client").exists())
+                BufferedReader(FileReader(".client")).use {
+                    username = it.readLine() ?: ""
+                    password = it.readLine() ?: ""
+                }
+            loginDialog(username, password)
+        } else pixiv.login()
     }
 
     fun onBookmarks(actionEvent: ActionEvent) {

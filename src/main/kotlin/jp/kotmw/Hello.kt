@@ -2,13 +2,14 @@ package jp.kotmw
 
 import javafx.application.Application
 import javafx.fxml.FXMLLoader
-import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.stage.Stage
 
 class Main : Application() {
     override fun start(primaryStage: Stage?) {
-        primaryStage?.scene = Scene(FXMLLoader.load<Parent>(ClassLoader.getSystemResource("Main.fxml")))
+        val fxmlLoader = FXMLLoader(ClassLoader.getSystemResource("Main.fxml"))
+        primaryStage?.scene = Scene(fxmlLoader.load())
+        primaryStage?.setOnShown { (fxmlLoader.getController() as Controller).loginCheck() }
         primaryStage?.show()
     }
 }

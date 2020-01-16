@@ -37,7 +37,9 @@ class Pixiv {
 
     fun login(userName: String, password: String) = auth(userName, password)
 
-    fun hasRefreshToken(): Boolean = configuration.refreshToken.isNullOrEmpty()
+    fun login(refreshToken: String = configuration.refreshToken ?: "") = auth(refreshToken = refreshToken)
+
+    fun hasRefreshToken(): Boolean = !configuration.refreshToken.isNullOrEmpty()
 
     fun rankings(
         mode: String = "day",
@@ -112,13 +114,13 @@ class Pixiv {
             "client_secret" to this.clientSecret
         )
 
-        if (refreshToken.isNotEmpty() || !this.configuration.refreshToken.isNullOrEmpty()) {
-            data["grant_type"] = "refresh_token"
-            data["refresh_token"] = if (refreshToken.isNotEmpty()) refreshToken else this.configuration.refreshToken.toString()
-        } else if (userName.isNotEmpty() && password.isNotEmpty()) {
+        if (userName.isNotEmpty() && password.isNotEmpty()) {
             data["grant_type"] = "password"
             data["username"] = userName
             data["password"] = password
+        } else if (refreshToken.isNotEmpty() || this.hasRefreshToken()) {
+            data["grant_type"] = "refresh_token"
+            data["refresh_token"] = if (refreshToken.isNotEmpty()) refreshToken else this.configuration.refreshToken.toString()
         } else throw IllegalArgumentException("password or refreshToken is not set.")
 
         val response = request(Connection.Method.POST, url, headers, data)
