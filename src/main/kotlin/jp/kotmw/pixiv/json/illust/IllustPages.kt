@@ -23,6 +23,7 @@ data class Illust(
     val title: String,
     val tools: List<String>,
     val total_bookmarks: Int,
+    val total_comments: Int? = null,
     val total_view: Int,
     val type: IllustType,
     val user: User,
@@ -66,5 +67,19 @@ data class User(
 )
 
 data class ProfileImageUrls(
+    val medium: String
+)
+
+data class UgoiraMetadata(
+    val frames: List<Frame>,
+    val zip_urls: ZipUrls
+)
+
+data class Frame(
+    val delay: Int,
+    val file: String
+)
+
+data class ZipUrls(
     val medium: String
 )

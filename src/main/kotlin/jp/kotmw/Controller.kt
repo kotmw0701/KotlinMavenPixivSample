@@ -16,6 +16,7 @@ import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
 import javafx.stage.Stage
 import jp.kotmw.pixiv.Pixiv
+import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustType
 import java.io.BufferedReader
 import java.io.File
@@ -48,7 +49,7 @@ class Controller {
         imageLists.children.clear()
         val bookmarkData = pixiv.userBookmarks(restrict = "private")
 
-        bookmarkData.forEach { addImage(it.image_urls.small, it.type) }
+        bookmarkData.forEach { addImage(it) }
 
         setLoadButton()
     }
@@ -58,7 +59,7 @@ class Controller {
         val rankingData = pixiv.rankings()
 
         for (illust in rankingData) {
-            addImage(illust.image_urls.small, illust.type)
+            addImage(illust)
         }
     }
 //          val type = imageUrl.split(".").last()
@@ -76,17 +77,17 @@ class Controller {
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)
-            for (illust in pixiv.loadNextList()) addImage(illust.image_urls.small, illust.type)
+            for (illust in pixiv.loadNextList()) addImage(illust)
             setLoadButton()
         }
     }
 
-    private fun addImage(imageUrl: String, illustType: IllustType) {
+    private fun addImage(illust: Illust) {
         val imageView = ImageView()
         imageView.isPreserveRatio = true
         imageView.fitHeight = 150.0
         imageView.fitWidth = 150.0
-        imageView.image = Image(pixiv.getImageStream(imageUrl))
+        imageView.image = Image(pixiv.getImageStream(illust.image_urls.small))
         val vBox = VBox(imageView)
         vBox.styleClass.add("imageBox")
         vBox.setPrefSize(150.0, 150.0)
@@ -107,8 +108,9 @@ class Controller {
 //            transition.toY = 1.0
 //            transition.play()
 //        }
-        if (illustType == IllustType.Ugoira)
+        if (illust.type == IllustType.Ugoira) {
             pane.children.add(ugoiraSign())
+        }
         imageLists.children.add(pane)
     }
 

@@ -1,9 +1,10 @@
 package jp.kotmw.pixiv
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import jp.kotmw.parseJson
+import jp.kotmw.pixiv.json.parseJson
 import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustPages
+import jp.kotmw.pixiv.json.illust.UgoiraMetadata
 import jp.kotmw.pixiv.json.response.AuthResponse
 import jp.kotmw.pixiv.json.response.Response
 import org.apache.commons.codec.digest.DigestUtils
@@ -93,6 +94,23 @@ class Pixiv {
             this.nextPage = it.next_url ?: ""
             it.illusts
         } else listOf()
+    }
+
+    fun illustDetail(illustId: Int): Illust {
+        val url = "$host/v1/illust/detail"
+        val param = mutableMapOf(
+            "illust_id" to illustId.toString()
+        )
+        return apiRequest(url = url, data = param).parseJson("illust")
+    }
+
+    fun ugoiraMetaData(illustId: Int): UgoiraMetadata {
+        val url = "$host/v1/ugoira/metadata"
+        val param = mutableMapOf(
+            "illust_id" to illustId.toString()
+        )
+        println("-----UgoiraMetaData-----")
+        return apiRequest(url = url, data = param).parseJson("ugoira_metadata")
     }
 
     fun getImageStream(imageUrl: String, referer: String = "https://app-api.pixiv.net"): BufferedInputStream {
