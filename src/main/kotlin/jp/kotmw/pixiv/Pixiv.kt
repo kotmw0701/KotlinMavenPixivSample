@@ -1,11 +1,11 @@
 package jp.kotmw.pixiv
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import jp.kotmw.pixiv.json.parseJson
+import jp.kotmw.decode
 import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustPages
 import jp.kotmw.pixiv.json.illust.UgoiraMetadata
-import jp.kotmw.pixiv.json.response.AuthResponse
+import jp.kotmw.pixiv.json.parseJson
 import jp.kotmw.pixiv.json.response.Response
 import org.apache.commons.codec.digest.DigestUtils
 import org.jsoup.Connection
@@ -109,7 +109,6 @@ class Pixiv {
         val param = mutableMapOf(
             "illust_id" to illustId.toString()
         )
-        println("-----UgoiraMetaData-----")
         return apiRequest(url = url, data = param).parseJson("ugoira_metadata")
     }
 
@@ -151,6 +150,7 @@ class Pixiv {
         } else throw IllegalArgumentException("password or refreshToken is not set.")
 
         val response = request(Connection.Method.POST, url, headers, data)
+        val body = response.body()
 
         println("Status : ${response.statusCode()}")
         println("Cookies : ")
@@ -160,7 +160,11 @@ class Pixiv {
         println("\nBody : ")
         println(response.body())
 
-        val authResponse: Response = response.body().parseJson<AuthResponse>().response
+        if (!listOf(200, 301, 302).contains(response.statusCode())) {
+            throw IllegalArgumentException(jacksonObjectMapper().readTree(body).get("errors").get("system").get("message").asText().decode())
+        }
+
+        val authResponse: Response = body.parseJson("response")
         this.accessToken = authResponse.access_token
         this.userId = authResponse.user.id
         this.configuration.refreshToken = authResponse.refresh_token
@@ -179,6 +183,7 @@ class Pixiv {
             .data(data)
             .ignoreContentType(true)
             .ignoreHttpErrors(true)
+            .timeout(5000)
             .execute()
     }
 
@@ -189,13 +194,14 @@ class Pixiv {
         data: Map<String, String> = mapOf(),
         authenticated: Boolean = true
     ):String {
-        if (headers["user-agent"].isNullOrEmpty() && headers["User-Agent"].isNullOrEmpty()) {
+        if (!headers.containsKey("user-agent") && !headers.containsKey("User-Agent")) {
             headers["App-OS"] = "ios"
             headers["App-OS-Version"] = "12.2"
             headers["App-Version"] = "7.6.2"
             headers["User-Agent"] = "PixivIOSApp/7.6.2 (iOS 12.2; iPhone9,1)"
         }
         return if (authenticated) {
+            if (accessToken.isEmpty()) throw IllegalStateException("Not authenticated.")
             headers["Authorization"] = "Bearer $accessToken"
             request(method, url, headers, data).body()
         } else request(method, url, headers, data).body()

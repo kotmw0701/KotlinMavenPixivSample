@@ -1,9 +1,5 @@
 package jp.kotmw.pixiv.json.response
 
-data class AuthResponse(
-    val response: Response
-)
-
 data class Response(
     val access_token: String,
     val device_token: String? = null,

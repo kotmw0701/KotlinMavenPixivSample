@@ -1,11 +1,15 @@
 package jp.kotmw
 
+import javafx.application.Platform
+import javafx.concurrent.Service
+import javafx.concurrent.Task
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.image.Image
@@ -14,13 +18,11 @@ import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.SVGPath
+import javafx.stage.Modality
 import javafx.stage.Stage
 import jp.kotmw.pixiv.Pixiv
 import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustType
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
 import kotlin.system.exitProcess
 
 class Controller {
@@ -29,20 +31,16 @@ class Controller {
     lateinit var root: AnchorPane
     @FXML
     lateinit var imageLists: FlowPane
+    @FXML
+    lateinit var loading: VBox
+    @FXML
+    lateinit var loadingDescription: Label
 
     private val pixiv = Pixiv()
 
     fun loginCheck() {
-        if (!pixiv.hasRefreshToken()) {
-            var username = ""
-            var password = ""
-            if (File(".client").exists())
-                BufferedReader(FileReader(".client")).use {
-                    username = it.readLine() ?: ""
-                    password = it.readLine() ?: ""
-                }
-            loginDialog(username, password)
-        } else pixiv.login()
+        if (!pixiv.hasRefreshToken()) loginDialog()
+        else asyncLogin()
     }
 
     fun onBookmarks(actionEvent: ActionEvent) {
@@ -126,32 +124,56 @@ class Controller {
         return pane
     }
 
-    private fun loginDialog(userName: String, password: String) {
+    private fun loginDialog(errorDescription: String = "") {
         val stage = Stage()
         stage.isResizable = false
         stage.sizeToScene()
+        val error = Label(errorDescription)
+        error.setPrefSize(240.0, 40.0)
+        error.textFill = Color.RED
+        error.isWrapText = true
         val textField = TextField()
         textField.promptText = "ID or mail address"
-        textField.text = userName
         textField.setPrefSize(240.0, 30.0)
         val passwordField = PasswordField()
         passwordField.promptText = "password"
-        passwordField.text = password
         passwordField.setPrefSize(240.0, 30.0)
         val login = Button("Login")
         login.setPrefSize(240.0, 40.0)
         login.setOnAction {
-            pixiv.login(textField.text, passwordField.text)
             stage.close()
+            asyncLogin(textField.text, passwordField.text)
         }
-        val vBox = VBox(textField, passwordField, login)
-        vBox.setPrefSize(300.0, 200.0)
-        vBox.padding = Insets(30.0)
+        val vBox = VBox(error, textField, passwordField, login)
+        vBox.setPrefSize(300.0, 230.0)
+        vBox.padding = Insets(10.0, 30.0, 10.0, 30.0)
         vBox.spacing = 10.0
         stage.scene = Scene(vBox)
-        stage.setOnCloseRequest {
-            exitProcess(0)
-        }
+        stage.title = "Pixiv Login"
+        stage.initModality(Modality.APPLICATION_MODAL)
+        stage.setOnCloseRequest { exitProcess(0) }
         stage.showAndWait()
+    }
+
+    private fun asyncLogin(userName: String = "", password: String = "") {
+        val service = object: Service<String>() {
+            override fun createTask(): Task<String> {
+                return object: Task<String>() {
+                    override fun call(): String {
+                        try {
+                        pixiv.login(userName, password)
+                        } catch (e: Exception) {
+                            Platform.runLater { loginDialog(e.message ?: "認証に失敗しました。") }
+                        }
+                        return ""
+                    }
+                }
+            }
+        }
+        loadingDescription.text = "Login Now..."
+        service.setOnRunning { loading.isVisible = true }
+        service.setOnSucceeded { loading.isVisible = false }
+
+        service.start()
     }
 }
