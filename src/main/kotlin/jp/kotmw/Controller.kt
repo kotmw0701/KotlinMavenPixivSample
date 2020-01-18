@@ -1,7 +1,6 @@
 package jp.kotmw
 
 import javafx.application.Platform
-import javafx.concurrent.Service
 import javafx.concurrent.Task
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
@@ -23,6 +22,7 @@ import javafx.stage.Stage
 import jp.kotmw.pixiv.Pixiv
 import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustType
+import java.util.concurrent.Executors
 import kotlin.system.exitProcess
 
 class Controller {
@@ -37,10 +37,15 @@ class Controller {
     lateinit var loadingDescription: Label
 
     private val pixiv = Pixiv()
+    private val executor = Executors.newSingleThreadExecutor()
 
     fun loginCheck() {
         if (!pixiv.hasRefreshToken()) loginDialog()
         else asyncLogin()
+    }
+
+    fun shutdown() {
+        executor.shutdown()
     }
 
     fun onBookmarks(actionEvent: ActionEvent) {
@@ -91,21 +96,6 @@ class Controller {
         vBox.setPrefSize(150.0, 150.0)
         vBox.alignment = Pos.CENTER
         val pane = Pane(vBox)
-//        val transition = ScaleTransition(Duration.seconds(0.1), imageView)
-//        pane.setOnMouseEntered {
-//            transition.fromX = 1.0
-//            transition.fromY = 1.0
-//            transition.toX = 1.1
-//            transition.toY = 1.1
-//            transition.play()
-//        }
-//        pane.setOnMouseExited {
-//            transition.fromX = 1.1
-//            transition.fromY = 1.1
-//            transition.toX = 1.0
-//            transition.toY = 1.0
-//            transition.play()
-//        }
         if (illust.type == IllustType.Ugoira) {
             pane.children.add(ugoiraSign())
         }
@@ -156,24 +146,19 @@ class Controller {
     }
 
     private fun asyncLogin(userName: String = "", password: String = "") {
-        val service = object: Service<String>() {
-            override fun createTask(): Task<String> {
-                return object: Task<String>() {
-                    override fun call(): String {
-                        try {
-                        pixiv.login(userName, password)
-                        } catch (e: Exception) {
-                            Platform.runLater { loginDialog(e.message ?: "認証に失敗しました。") }
-                        }
-                        return ""
-                    }
+        val task = object : Task<Unit>() {
+            override fun call() {
+                try {
+                pixiv.login(userName, password)
+                } catch (e: Exception) {
+                    Platform.runLater { loginDialog(e.message ?: "認証に失敗しました。") }
                 }
             }
         }
         loadingDescription.text = "Login Now..."
-        service.setOnRunning { loading.isVisible = true }
-        service.setOnSucceeded { loading.isVisible = false }
+        task.setOnRunning { loading.isVisible = true }
+        task.setOnSucceeded { loading.isVisible = false }
 
-        service.start()
+        executor.submit(task)
     }
 }

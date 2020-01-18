@@ -9,7 +9,9 @@ class Main : Application() {
     override fun start(primaryStage: Stage?) {
         val fxmlLoader = FXMLLoader(ClassLoader.getSystemResource("Main.fxml"))
         primaryStage?.scene = Scene(fxmlLoader.load())
-        primaryStage?.setOnShown { (fxmlLoader.getController() as Controller).loginCheck() }
+        val controller = (fxmlLoader.getController() as Controller)
+        primaryStage?.setOnShown { controller.loginCheck() }
+        primaryStage?.setOnCloseRequest { controller.shutdown() }
         primaryStage?.show()
     }
 }
