@@ -37,7 +37,8 @@ data class ImageUrls(
     val medium: String,
     val original: String? = null,
     val square_medium: String,
-    val small: String = medium.replace("540x540_70", "150x150")
+    val small: String = medium.replace("540x540_70", "240x240"),
+    val minimum: String = medium.replace("540x540_70", "150x150")
 )
 
 data class MetaPage(

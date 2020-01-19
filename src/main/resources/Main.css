@@ -1,5 +1,24 @@
 .imageBox {
-    -fx-effect: dropshadow(three-pass-box, black, 10, 0, 2.0, 2.0);
+    -fx-cursor: hand;
+    -fx-background-color: #f0f0f0;
+    /*-fx-effect: dropshadow(three-pass-box, black, 10, 0, 2.0, 2.0);*/
+}
+
+.imageBox .label {
+    -fx-font-family: sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: white;
+    -fx-alignment: center;
+    -fx-background-color: #00000090;
+    -fx-background-radius: 10px;
+    -fx-pref-width: 30px;
+    -fx-pref-height: 20px;
+    -fx-translate-x: 205px;
+    -fx-translate-y: 5px;
+}
+
+.imageList {
+    -fx-background-color: white;
 }
 
 .loadMore {

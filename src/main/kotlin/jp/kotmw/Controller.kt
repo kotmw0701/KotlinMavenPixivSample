@@ -33,8 +33,6 @@ class Controller {
     lateinit var imageLists: FlowPane
     @FXML
     lateinit var loading: VBox
-    @FXML
-    lateinit var loadingDescription: Label
 
     private val pixiv = Pixiv()
     private val executor = Executors.newSingleThreadExecutor()
@@ -76,7 +74,7 @@ class Controller {
         AnchorPane.setRightAnchor(button, 50.0)
         AnchorPane.setLeftAnchor(button, 50.0)
         val anchorPane = AnchorPane(button)
-        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty().subtract(35.0))
+        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty())
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)
@@ -86,31 +84,35 @@ class Controller {
     }
 
     private fun addImage(illust: Illust) {
+        val size = 240.0
         val imageView = ImageView()
         imageView.isPreserveRatio = true
-        imageView.fitHeight = 150.0
-        imageView.fitWidth = 150.0
+        imageView.fitHeight = size
+        imageView.fitWidth = size
         imageView.image = Image(pixiv.getImageStream(illust.image_urls.small))
         val vBox = VBox(imageView)
-        vBox.styleClass.add("imageBox")
-        vBox.setPrefSize(150.0, 150.0)
+        vBox.setPrefSize(size, size)
         vBox.alignment = Pos.CENTER
         val pane = Pane(vBox)
-        if (illust.type == IllustType.Ugoira) {
-            pane.children.add(ugoiraSign())
-        }
+        if (illust.page_count > 1)
+            pane.children.add(Label(illust.page_count.toString()))
+        pane.styleClass.add("imageBox")
+        if (illust.type == IllustType.Ugoira)
+            pane.children.add(ugoiraSign(size))
         imageLists.children.add(pane)
     }
 
-    private fun ugoiraSign(): Pane {
+    //150 : 55
+    //240 : 100
+    private fun ugoiraSign(prefsize: Double): Pane {
         val play = SVGPath()
         play.content = "M16 16v17.108a2 2 0 002.992 1.736l14.97-8.554a2 2 0 000-3.473l-14.97-8.553A2 2 0 0016 16z"
         play.fill = Color.WHITE
         play.translateX = -4.0
         play.translateY = -4.0
         val pane = Pane(Circle(20.0, 20.0, 20.0, Color.web("#00000064")), play)
-        pane.translateX = 55.0
-        pane.translateY = 55.0
+        pane.translateX = prefsize / 2 - 20
+        pane.translateY = prefsize / 2 - 20
         return pane
     }
 
@@ -131,8 +133,8 @@ class Controller {
         val login = Button("Login")
         login.setPrefSize(240.0, 40.0)
         login.setOnAction {
-            stage.close()
             asyncLogin(textField.text, passwordField.text)
+            stage.close()
         }
         val vBox = VBox(error, textField, passwordField, login)
         vBox.setPrefSize(300.0, 230.0)
@@ -155,7 +157,6 @@ class Controller {
                 }
             }
         }
-        loadingDescription.text = "Login Now..."
         task.setOnRunning { loading.isVisible = true }
         task.setOnSucceeded { loading.isVisible = false }
 
