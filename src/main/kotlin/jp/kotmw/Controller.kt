@@ -74,7 +74,7 @@ class Controller {
         AnchorPane.setRightAnchor(button, 50.0)
         AnchorPane.setLeftAnchor(button, 50.0)
         val anchorPane = AnchorPane(button)
-        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty())
+        anchorPane.prefWidthProperty().bind((imageLists.parent as Region).widthProperty().subtract(14.0))
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)

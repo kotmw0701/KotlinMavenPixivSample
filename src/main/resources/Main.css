@@ -1,3 +1,7 @@
+.scroll-pane > .viewport {
+    -fx-background-color: white;
+}
+
 .imageBox {
     -fx-cursor: hand;
     -fx-background-color: #f0f0f0;
@@ -15,10 +19,6 @@
     -fx-pref-height: 20px;
     -fx-translate-x: 205px;
     -fx-translate-y: 5px;
-}
-
-.imageList {
-    -fx-background-color: white;
 }
 
 .loadMore {

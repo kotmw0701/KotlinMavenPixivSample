@@ -17,7 +17,7 @@
             <Button focusTraversable="false" mnemonicParsing="false" onAction="#onRankings" text="Rankings" />
          </items>
       </ToolBar>
-      <ScrollPane fitToWidth="true" hbarPolicy="NEVER" layoutY="40.0" vbarPolicy="ALWAYS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="40.0">
+      <ScrollPane fitToWidth="true" hbarPolicy="NEVER" layoutY="40.0" styleClass="edge-to-edge" vbarPolicy="ALWAYS" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="40.0">
          <content>
             <FlowPane fx:id="imageLists" alignment="TOP_CENTER" hgap="10.0" styleClass="imageList" vgap="10.0">
                <padding>
@@ -25,11 +25,8 @@
                </padding>
             </FlowPane>
          </content>
-         <padding>
-            <Insets left="50.0" right="50.0" />
-         </padding>
       </ScrollPane>
-      <VBox fx:id="loading" alignment="CENTER" fillWidth="false" prefHeight="700.0" prefWidth="1200.0" spacing="10.0" style="-fx-background-color: #00000020;" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox fx:id="loading" alignment="CENTER" fillWidth="false" spacing="10.0" style="-fx-background-color: #00000020;" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <ProgressIndicator prefHeight="100.0" prefWidth="100.0" />
          </children>
