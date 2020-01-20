@@ -86,19 +86,16 @@ class Controller {
         imageView.fitHeight = size
         imageView.fitWidth = size
         imageView.isVisible = false
-        val vBox = VBox(imageView)
-        vBox.setPrefSize(size, size)
-        vBox.alignment = Pos.CENTER
-        val progress = VBox(ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS))
-        progress.setPrefSize(size, size)
-        progress.styleClass.add("loading")
-        val pane = Pane(vBox, progress)
+        val progress = ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS)
+        StackPane.setMargin(progress, Insets(70.0))
+        val pane = StackPane(imageView, progress)
+        pane.setPrefSize(size, size)
         pane.styleClass.add("imageBox")
 
         if (illust.page_count > 1)
             pane.children.add(Label(illust.page_count.toString()))
         if (illust.type == IllustType.Ugoira)
-            pane.children.add(ugoiraSign(size))
+            pane.children.add(ugoiraSign())
         imageLists.children.add(pane)
 
         val task = object : Task<Unit>() {
@@ -115,16 +112,12 @@ class Controller {
 
     //150 : 55
     //240 : 100
-    private fun ugoiraSign(prefsize: Double): Pane {
+    private fun ugoiraSign(): StackPane {
         val play = SVGPath()
         play.content = "M16 16v17.108a2 2 0 002.992 1.736l14.97-8.554a2 2 0 000-3.473l-14.97-8.553A2 2 0 0016 16z"
         play.fill = Color.WHITE
-        play.translateX = -4.0
-        play.translateY = -4.0
-        val pane = Pane(Circle(20.0, 20.0, 20.0, Color.web("#00000064")), play)
-        pane.translateX = prefsize / 2 - 20
-        pane.translateY = prefsize / 2 - 20
-        return pane
+        play.translateX = 1.0
+        return StackPane(Circle(20.0, 20.0, 20.0, Color.web("#00000064")), play)
     }
 
     private fun loginDialog(errorDescription: String = "") {

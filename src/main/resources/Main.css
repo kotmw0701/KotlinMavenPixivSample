@@ -17,8 +17,8 @@
     -fx-background-radius: 10px;
     -fx-pref-width: 30px;
     -fx-pref-height: 20px;
-    -fx-translate-x: 205px;
-    -fx-translate-y: 5px;
+    -fx-translate-x: 100px;
+    -fx-translate-y: -105px;
 }
 
 .loadMore {
