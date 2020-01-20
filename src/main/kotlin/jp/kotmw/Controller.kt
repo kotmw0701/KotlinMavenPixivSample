@@ -62,6 +62,8 @@ class Controller {
         for (illust in rankingData) {
             addImage(illust)
         }
+
+        setLoadButton()
     }
 //          val type = imageUrl.split(".").last()
 //
@@ -136,10 +138,9 @@ class Controller {
             asyncLogin(textField.text, passwordField.text)
             stage.close()
         }
-        val vBox = VBox(error, textField, passwordField, login)
+        val vBox = VBox(10.0, error, textField, passwordField, login)
         vBox.setPrefSize(300.0, 230.0)
         vBox.padding = Insets(10.0, 30.0, 10.0, 30.0)
-        vBox.spacing = 10.0
         stage.scene = Scene(vBox)
         stage.title = "Pixiv Login"
         stage.initModality(Modality.APPLICATION_MODAL)

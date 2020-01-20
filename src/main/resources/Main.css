@@ -1,11 +1,11 @@
 .scroll-pane > .viewport {
-    -fx-background-color: white;
+    -fx-background-color: lightgray;
 }
 
 .imageBox {
     -fx-cursor: hand;
-    -fx-background-color: #f0f0f0;
-    /*-fx-effect: dropshadow(three-pass-box, black, 10, 0, 2.0, 2.0);*/
+    -fx-background-color: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.3), 5, 0, 1.0, 1.0);
 }
 
 .imageBox .label {
