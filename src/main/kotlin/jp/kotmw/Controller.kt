@@ -7,10 +7,7 @@ import javafx.fxml.FXML
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.PasswordField
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.*
@@ -35,7 +32,7 @@ class Controller {
     lateinit var loading: VBox
 
     private val pixiv = Pixiv()
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor = Executors.newFixedThreadPool(10)
 
     fun loginCheck() {
         if (!pixiv.hasRefreshToken()) loginDialog()
@@ -48,10 +45,7 @@ class Controller {
 
     fun onBookmarks(actionEvent: ActionEvent) {
         imageLists.children.clear()
-        val bookmarkData = pixiv.userBookmarks(restrict = "private")
-
-        bookmarkData.forEach { addImage(it) }
-
+        pixiv.userBookmarks(restrict = "private").forEach { addImage(it) }
         setLoadButton()
     }
 
@@ -80,7 +74,7 @@ class Controller {
         imageLists.children.add(anchorPane)
         button.setOnAction {
             imageLists.children.remove(anchorPane)
-            for (illust in pixiv.loadNextList()) addImage(illust)
+            pixiv.loadNextList().forEach { addImage(it) }
             setLoadButton()
         }
     }
@@ -91,17 +85,32 @@ class Controller {
         imageView.isPreserveRatio = true
         imageView.fitHeight = size
         imageView.fitWidth = size
-        imageView.image = Image(pixiv.getImageStream(illust.image_urls.small))
+        imageView.isVisible = false
         val vBox = VBox(imageView)
         vBox.setPrefSize(size, size)
         vBox.alignment = Pos.CENTER
-        val pane = Pane(vBox)
+        val progress = VBox(ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS))
+        progress.setPrefSize(size, size)
+        progress.styleClass.add("loading")
+        val pane = Pane(vBox, progress)
+        pane.styleClass.add("imageBox")
+
         if (illust.page_count > 1)
             pane.children.add(Label(illust.page_count.toString()))
-        pane.styleClass.add("imageBox")
         if (illust.type == IllustType.Ugoira)
             pane.children.add(ugoiraSign(size))
         imageLists.children.add(pane)
+
+        val task = object : Task<Unit>() {
+            override fun call() {
+                imageView.image = Image(pixiv.getImageStream(illust.image_urls.medium))
+            }
+        }
+        task.setOnSucceeded {
+            pane.children.remove(progress)
+            imageView.isVisible = true
+        }
+        executor.submit(task)
     }
 
     //150 : 55

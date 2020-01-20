@@ -30,3 +30,9 @@
     -fx-pref-height: 30px;
     -fx-focus-traversable: false;
 }
+
+.loading {
+    -fx-background-color: #00000030;
+    -fx-alignment: center;
+    -fx-fill-width: false;
+}
