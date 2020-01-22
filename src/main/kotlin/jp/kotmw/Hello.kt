@@ -13,6 +13,7 @@ class Main : Application() {
         primaryStage?.setOnShown { controller.loginCheck() }
         primaryStage?.setOnCloseRequest { controller.shutdown() }
         primaryStage?.show()
+        println(System.getProperty("java.version"))
     }
 }
 
