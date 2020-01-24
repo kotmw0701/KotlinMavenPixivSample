@@ -5,7 +5,6 @@ import javafx.concurrent.Task
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.geometry.Insets
-import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.*
 import javafx.scene.image.Image
@@ -19,7 +18,9 @@ import javafx.stage.Stage
 import jp.kotmw.pixiv.Pixiv
 import jp.kotmw.pixiv.json.illust.Illust
 import jp.kotmw.pixiv.json.illust.IllustType
+import java.io.File
 import java.util.concurrent.Executors
+import javax.imageio.ImageIO
 import kotlin.system.exitProcess
 
 class Controller {
@@ -30,18 +31,17 @@ class Controller {
     lateinit var imageLists: FlowPane
     @FXML
     lateinit var loading: VBox
+    @FXML
+    lateinit var progressBar: ProgressBar
+    @FXML
+    lateinit var fileName: Label
 
     private val pixiv = Pixiv()
     private val executor = Executors.newFixedThreadPool(10)
 
-    fun loginCheck() {
-        if (!pixiv.hasRefreshToken()) loginDialog()
-        else asyncLogin()
-    }
+    fun loginCheck() = if (!pixiv.hasRefreshToken()) loginDialog() else asyncLogin()
 
-    fun shutdown() {
-        executor.shutdown()
-    }
+    fun shutdown() = executor.shutdown()
 
     fun onBookmarks(actionEvent: ActionEvent) {
         imageLists.children.clear()
@@ -51,13 +51,40 @@ class Controller {
 
     fun onRankings(actionEvent: ActionEvent) {
         imageLists.children.clear()
-        val rankingData = pixiv.rankings()
-
-        for (illust in rankingData) {
-            addImage(illust)
-        }
-
+        pixiv.rankings().forEach { addImage(it) }
         setLoadButton()
+    }
+
+    fun onDownload(actionEvent: ActionEvent) {
+        val bookmarkList = pixiv.userBookmarks(restrict = "private").toMutableList()
+        while (pixiv.hasNextList()) bookmarkList.addAll(pixiv.loadNextList())
+
+        File("Image").mkdir()
+
+        executor.submit(object : Task<Unit>() {
+            override fun call() {
+                bookmarkList.forEachIndexed { illustNum, it ->
+                    if (it.page_count <= 1) {
+                        val url = it.meta_single_page.original_image_url.toString()
+                        val type = url.split(".").last()
+                        ImageIO.write(ImageIO.read(pixiv.getImageStream(url)), type, File("Image\\${it.id}.$type"))
+                        updateMessage(it.title)
+                    } else it.meta_pages.forEachIndexed { index, pages ->
+                        val url = pages.image_urls.original.toString()
+                        val type = url.split(".").last()
+                        ImageIO.write(ImageIO.read(pixiv.getImageStream(url)), type, File("Image\\${it.id}_$index.$type"))
+                        updateMessage(it.title +"_"+ index)
+                    }
+                    updateProgress(illustNum.toLong(), bookmarkList.size.toLong())
+                }
+            }
+        }.apply {
+            setOnScheduled {
+                progressBar.progressProperty().bind(progressProperty())
+                fileName.textProperty().bind(messageProperty())
+            }
+            setOnSucceeded { println("Complete!") }
+        })
     }
 //          val type = imageUrl.split(".").last()
 //
@@ -81,11 +108,14 @@ class Controller {
 
     private fun addImage(illust: Illust) {
         val size = 240.0
-        val imageView = ImageView()
-        imageView.isPreserveRatio = true
-        imageView.fitHeight = size
-        imageView.fitWidth = size
-        imageView.isVisible = false
+
+        val imageView = ImageView().apply {
+            isPreserveRatio = true
+            fitHeight = size
+            fitWidth = size
+            isVisible = false
+        }
+
         val progress = ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS)
         progress.setMinSize(100.0, 100.0)
         val pane = StackPane(imageView, progress)
@@ -105,13 +135,16 @@ class Controller {
 
     //150 : 55
     //240 : 100
-    private fun ugoiraSign(): StackPane {
-        val play = SVGPath()
-        play.content = "M16 16v17.108a2 2 0 002.992 1.736l14.97-8.554a2 2 0 000-3.473l-14.97-8.553A2 2 0 0016 16z"
-        play.fill = Color.WHITE
-        play.translateX = 1.0
-        return StackPane(Circle(20.0, 20.0, 20.0, Color.web("#00000064")), play)
-    }
+    private fun ugoiraSign(): StackPane = StackPane(
+        Circle(20.0,
+            20.0,
+            20.0,
+            Color.web("#00000064")),
+        SVGPath().apply {
+            content = "M16 16v17.108a2 2 0 002.992 1.736l14.97-8.554a2 2 0 000-3.473l-14.97-8.553A2 2 0 0016 16z"
+            fill = Color.WHITE
+            translateX = 1.0
+        })
 
     private fun loginDialog(errorDescription: String = "") {
         val stage = Stage()
@@ -133,7 +166,7 @@ class Controller {
             asyncLogin(textField.text, passwordField.text)
             stage.close()
         }
-        val vBox = VBox(10.0, error, textField, passwordField, login)
+        val vBox = VBox(10.0, Label(errorDescription), textField, passwordField, login)
         vBox.setPrefSize(300.0, 230.0)
         vBox.padding = Insets(10.0, 30.0, 10.0, 30.0)
         stage.scene = Scene(vBox)

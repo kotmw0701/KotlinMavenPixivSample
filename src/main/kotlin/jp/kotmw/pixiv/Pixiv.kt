@@ -31,10 +31,7 @@ class Pixiv {
         val config = File(".config")
         if (config.exists())
             BufferedReader(FileReader(".config")).use { configuration = it.readText().parseJson() }
-        else {
-            configuration = Configuration(null)
-            updateConfig()
-        }
+        else configuration = Configuration(null)
     }
 
     fun login(userName: String, password: String) = auth(userName, password)
@@ -160,9 +157,8 @@ class Pixiv {
         println("\nBody : ")
         println(response.body())
 
-        if (!listOf(200, 301, 302).contains(response.statusCode())) {
+        if (!listOf(200, 301, 302).contains(response.statusCode()))
             throw IllegalArgumentException(jacksonObjectMapper().readTree(body).get("errors").get("system").get("message").asText().decode())
-        }
 
         val authResponse: Response = body.parseJson("response")
         this.accessToken = authResponse.access_token
