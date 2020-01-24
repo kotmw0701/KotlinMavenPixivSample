@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1200.0" stylesheets="@Main.css" xmlns="http://javafx.com/javafx/8.0.171" fx:controller="jp.kotmw.Controller">
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1200.0" stylesheets="@Main.css" xmlns="http://javafx.com/javafx/11.0.1" fx:controller="jp.kotmw.Controller">
    <children>
       <ToolBar prefHeight="40.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
          <items>
@@ -28,7 +28,7 @@
       </ScrollPane>
       <VBox fx:id="loading" styleClass="loading" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <ProgressIndicator prefHeight="200.0" prefWidth="200.0" />
+            <ProgressIndicator minHeight="-Infinity" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" />
          </children>
       </VBox>
    </children>

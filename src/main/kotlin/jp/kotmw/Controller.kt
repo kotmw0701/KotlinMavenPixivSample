@@ -87,27 +87,20 @@ class Controller {
         imageView.fitWidth = size
         imageView.isVisible = false
         val progress = ProgressIndicator(ProgressIndicator.INDETERMINATE_PROGRESS)
-        StackPane.setMargin(progress, Insets(70.0))
+        progress.setMinSize(100.0, 100.0)
         val pane = StackPane(imageView, progress)
         pane.setPrefSize(size, size)
         pane.styleClass.add("imageBox")
 
-        if (illust.page_count > 1)
-            pane.children.add(Label(illust.page_count.toString()))
-        if (illust.type == IllustType.Ugoira)
-            pane.children.add(ugoiraSign())
+        if (illust.page_count > 1) pane.children.add(Label(illust.page_count.toString()))
+        if (illust.type == IllustType.Ugoira) pane.children.add(ugoiraSign())
         imageLists.children.add(pane)
-
-        val task = object : Task<Unit>() {
-            override fun call() {
-                imageView.image = Image(pixiv.getImageStream(illust.image_urls.medium))
-            }
-        }
-        task.setOnSucceeded {
+        executor.submit(object : Task<Unit>() {
+            override fun call() { imageView.image = Image(pixiv.getImageStream(illust.image_urls.medium)) }
+        }.apply { setOnSucceeded {
             pane.children.remove(progress)
             imageView.isVisible = true
-        }
-        executor.submit(task)
+        } })
     }
 
     //150 : 55
