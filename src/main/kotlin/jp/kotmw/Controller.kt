@@ -166,7 +166,7 @@ class Controller {
             asyncLogin(textField.text, passwordField.text)
             stage.close()
         }
-        val vBox = VBox(10.0, Label(errorDescription), textField, passwordField, login)
+        val vBox = VBox(10.0, error, textField, passwordField, login)
         vBox.setPrefSize(300.0, 230.0)
         vBox.padding = Insets(10.0, 30.0, 10.0, 30.0)
         stage.scene = Scene(vBox)
